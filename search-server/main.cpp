@@ -15,9 +15,6 @@ void AssertEqualImpl(const U& l, const T& r, const string& l_srt, const string& 
 
 }
 
-//#define ASSERT_EQUAL( a, b ) AssertEqualImpl((a), (b), #a, #b, __FILE__, __FUNCTION__, __LINE__)
-//#define ASSERT_EQUAL_HINT( a, b, hint ) AssertEqualImpl((a), (b), #a, #b, __FILE__, __FUNCTION__, __LINE__, #hint)
-
 template<typename T>
 void AssertImpl(const T& value, const string& value_str, const string& file, const string& func, unsigned line, const string& hint = ""){
 
@@ -32,14 +29,7 @@ void AssertImpl(const T& value, const string& value_str, const string& file, con
     }
 
 }
-//#define ASSERT( a ) AssertImpl(!!(a), #a, __FILE__, __FUNCTION__, __LINE__)
-//#define ASSERT_HINT( a, hint ) AssertImpl(!!(a), #a, __FILE__, __FUNCTION__, __LINE__, #hint)
 
-template <typename f>
-void RunTestImpl(const f& func, const string& func_name) {
-    func();
-    cerr << func_name << " OK" << endl;
-}
 
 void TestAddedDocuments() {
 
@@ -67,7 +57,7 @@ void TestExcludeStopWordsFromAddedDocumentContent() {
     const int doc_id = 42;
     const string content = "cat in the city"s;
     const vector<int> ratings = {1, 2, 3};
-    
+
     {
         SearchServer server;
         server.AddDocument(doc_id, content, DocumentStatus::ACTUAL, ratings);
@@ -157,8 +147,6 @@ void TestGetStatusDoc(){
 
 void TestGetRelevanceDocs(){
 
-    const double EPSILON = 1e-6;
-
     const int doc_id = 1;
     const string content = "cat in the city"s;
     const vector<int> ratings = {1, 2, 3};
@@ -173,7 +161,7 @@ void TestGetRelevanceDocs(){
         server.AddDocument(doc_id, content, DocumentStatus::ACTUAL, ratings);
         server.AddDocument(doc_id_2, content_2, DocumentStatus::ACTUAL, ratings_2);
         const auto found_docs = server.FindTopDocuments("cat");
-        ASSERT(found_docs[0].relevance -  log( server.GetDocumentCount() * 1.0 / 1 ) * ( 1. / 4) < EPSILON);
+        ASSERT(found_docs[0].relevance ==  log( server.GetDocumentCount() * 1.0 / 1 ) * ( 1. / 4) ) ;
 
     }
 
@@ -194,7 +182,7 @@ void TestGetRelevanceDocs(){
         server.AddDocument(doc_id_4, content_4, DocumentStatus::ACTUAL, ratings_4);
         const auto found_docs = server.FindTopDocuments("cat");
         ASSERT_EQUAL( found_docs.size(), 3 );
-        ASSERT( found_docs[0].relevance > found_docs[1].relevance and found_docs[1].relevance > found_docs[2].relevance);
+        ASSERT( found_docs[0].relevance > found_docs[1].relevance && found_docs[1].relevance > found_docs[2].relevance);
 
     }
 }
@@ -214,7 +202,7 @@ void TestGetRatingDocs(){
         server.AddDocument(doc_id, content, DocumentStatus::ACTUAL, ratings);
         const auto found_docs = server.FindTopDocuments("cat");
 
-        ASSERT_EQUAL(found_docs[0].rating, ( 1 + 5 -10 ) / 3 );
+        ASSERT_EQUAL(found_docs[0].rating, ( 1 + 5 - 10 ) / 3 );
     }
 
     {
@@ -240,7 +228,7 @@ void TestFunctionalPredictFunction(){
         SearchServer server;
         server.AddDocument(doc_id, content, DocumentStatus::ACTUAL, ratings);
         server.AddDocument(doc_id_2, content_2, DocumentStatus::BANNED, ratings_2);
-        const auto found_docs = server.FindTopDocuments("cat", [](int doc_id, DocumentStatus status, int) { return doc_id % 2 == 0 and status == DocumentStatus::BANNED; });
+        const auto found_docs = server.FindTopDocuments("cat", [](int doc_id, DocumentStatus status, int) { return doc_id % 2 == 0 && status == DocumentStatus::BANNED; });
         ASSERT_EQUAL(found_docs.size(), 1);
         ASSERT_EQUAL(found_docs[0].id, 4);
 
@@ -250,7 +238,7 @@ void TestFunctionalPredictFunction(){
         SearchServer server;
         server.AddDocument(doc_id, content, DocumentStatus::ACTUAL, ratings);
         server.AddDocument(doc_id_2, content_2, DocumentStatus::BANNED, ratings_2);
-        const auto found_docs = server.FindTopDocuments("cat", [](int doc_id, DocumentStatus, int rating) { return doc_id < 5 and rating >= 2; });
+        const auto found_docs = server.FindTopDocuments("cat", [](int doc_id, DocumentStatus, int rating) { return doc_id < 5 && rating >= 2; });
         ASSERT_EQUAL(found_docs.size(), 2);
     }
 }
@@ -266,18 +254,19 @@ void TestFunctionalMatchDocument(){
 
         SearchServer server;
         server.AddDocument(doc_id, content, DocumentStatus::ACTUAL, ratings);
-        const auto [vector_word, DocumentStatus ] = server.MatchDocument("cat the black", 1);
+        const auto [vector_word, status ] = server.MatchDocument("cat the black", 1);
 
         ASSERT_EQUAL(vector_word.size(), 2 );
+        ASSERT_EQUAL(vector_word[0], "cat"s );
+        ASSERT_EQUAL(vector_word[1], "the"s );
 
     }
 
     {
 
-
         SearchServer server;
         server.AddDocument(doc_id, content, DocumentStatus::ACTUAL, ratings);
-        const auto [vector_word, DocumentStatus ] = server.MatchDocument("cat the -city", 1);
+        const auto [vector_word, status ] = server.MatchDocument("cat the -city", 1);
         ASSERT(vector_word.empty());
     }
 
@@ -294,4 +283,3 @@ void TestSearchServer() {
     RUN_TEST(TestGetRatingDocs);
     RUN_TEST(TestFunctionalMatchDocument);
 }
-
