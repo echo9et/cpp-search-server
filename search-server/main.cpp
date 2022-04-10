@@ -147,6 +147,8 @@ void TestGetStatusDoc(){
 
 void TestGetRelevanceDocs(){
 
+    const double EPSILON = 1e-6;
+
     const int doc_id = 1;
     const string content = "cat in the city"s;
     const vector<int> ratings = {1, 2, 3};
@@ -161,7 +163,7 @@ void TestGetRelevanceDocs(){
         server.AddDocument(doc_id, content, DocumentStatus::ACTUAL, ratings);
         server.AddDocument(doc_id_2, content_2, DocumentStatus::ACTUAL, ratings_2);
         const auto found_docs = server.FindTopDocuments("cat");
-        ASSERT(found_docs[0].relevance ==  log( server.GetDocumentCount() * 1.0 / 1 ) * ( 1. / 4) ) ;
+        ASSERT(abs( found_docs[0].relevance -  log( server.GetDocumentCount() * 1.0 / 1 ) * ( 1. / 4) ) < EPSILON) ;
 
     }
 
