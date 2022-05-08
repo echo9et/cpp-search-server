@@ -10,7 +10,7 @@
 using namespace std;
 
 const int MAX_RESULT_DOCUMENT_COUNT = 5;
-
+const double EPSILON = 1e-6;
 string ReadLine() {
     string s;
     getline(cin, s);
@@ -81,26 +81,21 @@ public:
     template <typename StringContainer>
     explicit SearchServer(const StringContainer& stop_words)
         : stop_words_(MakeUniqueNonEmptyStrings(stop_words)) {
-        for ( const auto& stop_word : stop_words_)
-            if (!IsValidWord(stop_word)) throw invalid_argument("Ошибка добавления стоп слов : в добавляемых словах присуствуют запрещенные символы с кодами от 0 до 31"s);
+        if (!all_of(stop_words_.begin(), stop_words_.end(), IsValidWord))
+            throw invalid_argument("Ошибка добавления стоп слов : в добавляемых словах присуствуют запрещенные символы"s);
     }
 
     explicit SearchServer(const string& stop_words_text)
         : SearchServer(SplitIntoWords(stop_words_text))  // Invoke delegating constructor from string container
     {
-        for ( const auto& stop_word : stop_words_)
-            if (!IsValidWord(stop_word)) throw invalid_argument("Ошибка добавления стоп слов : в добавляемых словах присуствуют запрещенные символы с кодами от 0 до 31"s);
     }
 
     void AddDocument(int document_id, const string& document, DocumentStatus status,
                                    const vector<int>& ratings) {
         if ((document_id < 0) || (documents_.count(document_id) > 0)) {
-            throw invalid_argument("Ошибка при добавление документа : id < 0, либо документ с таким id уже был добавлен"s);
+            throw invalid_argument("Ошибка в добавление документа : id < 0, либо документ с таким id уже был добавлен"s);
         }
-        vector<string> words;
-        if (!SplitIntoWordsNoStop(document, words)) {
-            throw invalid_argument("Ошибка добавления стоп слов : в добавляемых словах присуствуют запрещенные символы с кодами от 0 до 31"s);
-        }
+        vector<string> words = SplitIntoWordsNoStop(document);
 
         const double inv_word_count = 1.0 / words.size();
         for (const string& word : words) {
@@ -114,14 +109,12 @@ public:
     template <typename DocumentPredicate>
 
     vector<Document> FindTopDocuments(const string& raw_query, DocumentPredicate document_predicate) const {
-        Query query;
-
-        if (!ParseQuery(raw_query,query)) throw invalid_argument("Ошибка в запросе : слова в запросе содержат запрещеные символы, либо используется недопустимый формат"s);
+        Query query = ParseQuery(raw_query);
 
         auto matched_documents = FindAllDocuments(query, document_predicate);
 
         sort(matched_documents.begin(), matched_documents.end(), [](const Document& lhs, const Document& rhs) {
-            if (abs(lhs.relevance - rhs.relevance) < 1e-6) {
+            if (abs(lhs.relevance - rhs.relevance) < EPSILON) {
                 return lhs.rating > rhs.rating;
             } else {
                 return lhs.relevance > rhs.relevance;
@@ -132,19 +125,20 @@ public:
         }
         return matched_documents;
     }
+    
     vector<Document> FindTopDocuments(const string& raw_query, DocumentStatus status) const {
         return FindTopDocuments(raw_query, [status](int document_id, DocumentStatus document_status, int rating) {
             return document_status == status;
         });
     }
+    
     vector<Document> FindTopDocuments(const string& raw_query) const {
         return FindTopDocuments(raw_query, DocumentStatus::ACTUAL);
     }
 
 
     tuple<vector<string>, DocumentStatus> MatchDocument(const string& raw_query, int document_id) const {
-        Query query;
-        if (!ParseQuery(raw_query, query)) throw invalid_argument("Ошибка добавления стоп слов : в добавляемых словах присуствуют запрещенные символы с кодами от 0 до 31"s);
+        Query query = ParseQuery(raw_query);
         vector<string> matched_words;
         for (const string& word : query.plus_words) {
             if (word_to_document_freqs_.count(word) == 0) {
@@ -172,7 +166,7 @@ public:
         if (index >= 0 && index < GetDocumentCount()) {
             return document_ids_[index];
         }
-        throw out_of_range("Ошибка получения id документа : индекс переданного документа выходит за пределы допустимого диапазона"s);
+        throw out_of_range("Id < 0, либо совпадает с уже имеющимся, либо отличается больше, чем на 1"s);
 
     }
 
@@ -191,19 +185,19 @@ private:
         return stop_words_.count(word) > 0;
     }
 
-    [[nodiscard]] bool SplitIntoWordsNoStop(const string& text, vector<string>& result) const {
-        result.clear();
+    vector<string> SplitIntoWordsNoStop(const string& text) const {
+        vector<string> result;
         vector<string> words;
         for (const string& word : SplitIntoWords(text)) {
             if (!IsValidWord(word)) {
-                return false;
+                throw invalid_argument("Ошибка добавления стоп слов : в добавляемых словах присуствуют запрещенные символы с кодами от 0 до 31"s);
             }
             if (!IsStopWord(word)) {
-                words.push_back(word);
+                result.push_back(word);
             }
         }
-        result.swap(words);
-        return true;
+        result.swap(result);
+        return result;
     }
 
     static int ComputeAverageRating(const vector<int>& ratings) {
@@ -223,16 +217,15 @@ private:
         bool is_stop;
     };
 
-    optional<QueryWord> ParseQueryWord(string text) const {
+    QueryWord ParseQueryWord(string text) const {
         bool is_minus = false;
-        // Word shouldn't be empty
         if (text[0] == '-') {
             is_minus = true;
             text = text.substr(1);
-            if ( text.empty() ) return nullopt;
+            if ( text.empty() ) throw invalid_argument("Ошибка в запросе : отсутствие текста после символа «минус»"s);;
         }
-        if ( !IsValidWord(text) || text[0] == '-' || ( text.size() > 0 && text[text.size() - 1 ] == '-' ))
-            return nullopt;
+        if ( !IsValidWord(text) || text[0] == '-' )
+            throw invalid_argument("Ошибка в запросе : слова в запросе содержат запрещеные символы, либо слово содержит задвоенный «минус»"s);;
         return QueryWord{text, is_minus, IsStopWord(text)};
     }
 
@@ -242,22 +235,21 @@ private:
 
     };
 
-    [[nodiscard]] bool ParseQuery (const string& text, Query& query) const{
-
+    Query ParseQuery (const string& text) const{
+        Query query;
         for (const string& word : SplitIntoWords(text)) {
-            const optional<QueryWord> query_word = ParseQueryWord(word);
-            if ( !query_word.has_value() ) return false;
+            const QueryWord query_word = ParseQueryWord(word);
+         
+            if (!query_word.is_stop) {
 
-            if (!(*query_word).is_stop) {
-
-                if ((*query_word).is_minus) {
-                    query.minus_words.insert((*query_word).data);
+                if (query_word.is_minus) {
+                    query.minus_words.insert(query_word.data);
                 } else {
-                    query.plus_words.insert((*query_word).data);
+                    query.plus_words.insert(query_word.data);
                 }
             }
         }
-        return true;
+        return query;
     }
 
     // Existence required
