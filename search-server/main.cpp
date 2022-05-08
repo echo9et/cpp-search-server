@@ -261,6 +261,7 @@ private:
     }
 
     template <typename DocumentPredicate>
+    
     vector<Document> FindAllDocuments(const Query& query, DocumentPredicate document_predicate) const {
         map<int, double> document_to_relevance;
         for (const string& word : query.plus_words) {
@@ -291,6 +292,7 @@ private:
         }
         return matched_documents;
     }
+    
     static bool IsValidWord(const string& word) {
         // A valid word must not contain special characters
         return none_of(word.begin(), word.end(), [](char c) {
