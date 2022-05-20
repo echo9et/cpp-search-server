@@ -1,5 +1,12 @@
 #include "search_server.h"
+
+using std::string;
+
 //SearchServer::SearchServer(){}
+
+SearchServer::SearchServer(const string& stop_words_text)
+    : SearchServer(SplitIntoWords(stop_words_text)){
+}
 
 void SearchServer::AddDocument(int document_id, const string& document, DocumentStatus status,
                  const vector<int>& ratings) {
@@ -14,6 +21,18 @@ void SearchServer::AddDocument(int document_id, const string& document, Document
     documents_.emplace(document_id, DocumentData{ComputeAverageRating(ratings), status});
     document_ids_.push_back(document_id);
 }
+
+vector<Document> SearchServer::FindTopDocuments(const string& raw_query, DocumentStatus status) const {
+    return FindTopDocuments(
+        raw_query, [status](int, DocumentStatus document_status, int) {
+            return document_status == status;
+        });
+}
+
+vector<Document> SearchServer::FindTopDocuments(const string& raw_query) const {
+    return FindTopDocuments(raw_query, DocumentStatus::ACTUAL);
+}
+
 
 int SearchServer::GetDocumentCount() const {
     return documents_.size();
@@ -52,6 +71,13 @@ bool SearchServer::IsStopWord(const string& word) const {
     return stop_words_.count(word) > 0;
 }
 
+bool SearchServer::IsValidWord(const string& word) {
+
+    return none_of(word.begin(), word.end(), [](char c) {
+        return c >= '\0' && c < ' ';
+    });
+}
+
 vector<string> SearchServer::SplitIntoWordsNoStop(const string& text) const {
     vector<string> words;
     for (const string& word : SplitIntoWords(text)) {
@@ -64,6 +90,12 @@ vector<string> SearchServer::SplitIntoWordsNoStop(const string& text) const {
     }
     return words;
 }
+
+int SearchServer::ComputeAverageRating(const vector<int>& ratings) {
+    int rating_sum = std::accumulate(ratings.begin(),ratings.end(),0);
+    return rating_sum / static_cast<int>(ratings.size());
+}
+
 
 SearchServer::QueryWord SearchServer::ParseQueryWord(const string& text) const {
     if (text.empty()) {

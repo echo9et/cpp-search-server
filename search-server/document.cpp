@@ -7,3 +7,9 @@ ostream& operator<<(ostream& out, const Document& document) {
         << "rating = "s << document.rating << " }"s;
     return out;
 }
+
+Document::Document(int id, double relevance, int rating)
+    : id(id)
+    , relevance(relevance)
+    , rating(rating) {
+}
