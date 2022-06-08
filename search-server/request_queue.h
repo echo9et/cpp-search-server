@@ -28,3 +28,5 @@ private:
     const SearchServer& search_server_;
     // возможно, здесь вам понадобится что-то ещё
 };
+
+

@@ -41,20 +41,6 @@ void FindTopDocuments(const SearchServer& search_server, const string& raw_query
     }
 }
 
-void MatchDocuments(const SearchServer& search_server, const string& query) {
-    try {
-        cout << "Matching for request: "s << query << endl;
-        const int document_count = search_server.GetDocumentCount();
-        for (int index = 0; index < document_count; ++index) {
-            const int document_id = search_server.GetDocumentId(index);
-            const auto [words, status] = search_server.MatchDocument(query, document_id);
-            PrintMatchDocumentResult(document_id, words, status);
-        }
-    } catch (const exception& e) {
-        cout << "Error in matchig request "s << query << ": "s << e.what() << endl;
-    }
-}
-
         int main() {
             SearchServer search_server("and with"s);
 
