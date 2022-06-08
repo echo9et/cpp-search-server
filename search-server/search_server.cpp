@@ -1,5 +1,5 @@
 #include "search_server.h"
-
+#include <iostream>
 using std::string;
 
 //SearchServer::SearchServer(){}
@@ -130,4 +130,46 @@ SearchServer::Query SearchServer::ParseQuery(const string& text) const {
 
 double SearchServer::ComputeWordInverseDocumentFreq(const string& word) const {
     return log(GetDocumentCount() * 1.0 / word_to_document_freqs_.at(word).size());
+}
+
+std::vector<int>::iterator SearchServer::begin(){
+    return document_ids_.begin();
+}
+std::vector<int>::iterator SearchServer::end(){
+    return document_ids_.end();
+}
+
+const map<string, double> SearchServer::GetWordFrequencies(int document_id) const
+{
+    map<string, double> out;
+    for ( const auto& [word, ranq] : word_to_document_freqs_)
+    {
+        if ( ranq.count(document_id) > 0 )
+        {
+            out[string(word)] = ranq.at(document_id);
+            continue;
+        }
+    }
+    return out;
+}
+
+void SearchServer::RemoveDocument(int document_id)
+{
+    for ( auto& [word, ranq] : word_to_document_freqs_)
+    {
+        if ( ranq.count(document_id) > 0 )
+        {
+            ranq.erase(document_id);
+            continue;
+        }
+    }
+    if ( documents_.count(document_id) > 0 ) documents_.erase(document_id);
+
+    for ( auto& [word, ranq] : word_to_document_freqs_)
+    {
+        for ( auto [id, r ] : ranq ) {
+            std::cout << word << " id: " << id << " r: " << r << std::endl;
+        }
+    }
+    document_ids_.erase(find(document_ids_.begin(), document_ids_.end(), document_id));
 }

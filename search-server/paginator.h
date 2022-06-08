@@ -2,7 +2,7 @@
 #include <sstream>
 #include <ostream>
 #include <vector>
-
+#include <cassert>
 using std::vector;
 using std::ostream;
 using std::min;
