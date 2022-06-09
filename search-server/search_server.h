@@ -19,6 +19,7 @@ using std::string_literals::operator""s;
 
 const int MAX_RESULT_DOCUMENT_COUNT = 5;
 const double EPSILON = 1e-6;
+static const map<int, set<string>> document_id_words_;
 
 class SearchServer {
 public:
@@ -43,9 +44,9 @@ public:
 
     tuple<vector<string>, DocumentStatus> MatchDocument(const string& raw_query,
                                                         int document_id) const ;
-    std::map<int,set<string>>::iterator begin();
+    std::set<int>::iterator begin();
 
-    std::map<int,set<string>>::iterator end();
+    std::set<int>::iterator end();
 
     const map<string, double>& GetWordFrequencies(int document_id) const;
 
@@ -63,8 +64,7 @@ private:
     map<int, map<string, double>> document_to_word_freqs_;
     const map<string, double> empty_word_freqs_;
     map<int, DocumentData> documents_;
-//    vector<int> document_ids_;
-    map<int, set<string>> document_id_words_;
+    std::set<int> document_ids_;
 
     bool IsStopWord(const string& word) const;
 

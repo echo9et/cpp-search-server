@@ -4,18 +4,18 @@ void RemoveDuplicates(SearchServer& server)
 {
     set<int> remove_id;
     set<set<string>> words_docs;
-    for ( auto& it : server)
+    for ( const int id : server)
     {
-        if ( remove_id.count(it.first) > 1 ) continue;
+        if ( remove_id.count(id) > 1 ) continue;
 
         set<string> words_doc;
-        for ( const auto& [word, r] : server.GetWordFrequencies(it.first) )
+        for ( const auto& [word, r] : server.GetWordFrequencies( id ) )
         {
             words_doc.insert(word);
         }
         if ( words_docs.count(words_doc) > 0 )
         {
-            remove_id.insert(it.first);
+            remove_id.insert(id);
         }
         else
         {
