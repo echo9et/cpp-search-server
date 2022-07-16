@@ -16,6 +16,8 @@ class LogDuration {
 public:
     LogDuration(const std::string& id) : id_(id) {
     }
+    LogDuration(const std::string_view& id) : id_(static_cast<string>(id)) {
+    }
 
     ~LogDuration() {
         const auto end_time = steady_clock::now();

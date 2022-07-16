@@ -11,7 +11,7 @@ void RemoveDuplicates(SearchServer& server)
         set<string> words_doc;
         for ( const auto& [word, r] : server.GetWordFrequencies( id ) )
         {
-            words_doc.insert(word);
+            words_doc.insert(word.data());
         }
         if ( words_docs.count(words_doc) > 0 )
         {
