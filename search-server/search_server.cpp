@@ -53,9 +53,12 @@ tuple<vector<string_view>, DocumentStatus> SearchServer::MatchDocument(__pstl::e
 {
 
 //    return MatchDocument(raw_query,document_id);
-    if (documents_.count(document_id) == 0 ) throw std::out_of_range("ID no correct");
+    if ( documents_.count(document_id) == 0 )
+    {
+        throw std::out_of_range("ID no correct");
+    }
 
-    const auto query = ParseQueryExec(raw_query);
+    const auto query = ParseQuery(raw_query);
 
     vector<std::string_view> matched_words;
     vector<std::string_view> prew_matched_words(query.plus_words.size());
@@ -69,7 +72,7 @@ tuple<vector<string_view>, DocumentStatus> SearchServer::MatchDocument(__pstl::e
              [&](const auto& word) {
                 return word_to_document_freqs_.count(word) != 0 && word_to_document_freqs_.at(word).count(document_id);});
     for (auto b = prew_matched_words.begin() ; b != prew_matched_words.end();++b){
-        if ( *b!="" && ( find(matched_words.begin(),matched_words.end(), *b) == matched_words.end() ) ) {
+        if ( *b != "" && ( find(matched_words.begin(),matched_words.end(), *b) == matched_words.end() ) ) {
             matched_words.push_back(word_to_document_freqs_.find(*b)->first);
         }
     }
@@ -80,9 +83,12 @@ tuple<vector<string_view>, DocumentStatus> SearchServer::MatchDocument(__pstl::e
 tuple<vector<std::string_view>, DocumentStatus> SearchServer::MatchDocument(__pstl::execution::parallel_policy, const std::string_view& raw_query, int document_id) const
 {
 //    return MatchDocument(raw_query,document_id);
-    if (documents_.count(document_id) == 0 ) throw std::out_of_range("ID no correct");
+    if (documents_.count(document_id) == 0 )
+    {
+        throw std::out_of_range("ID no correct");
+    }
 
-    const auto query = ParseQueryExec(raw_query);
+    const auto query = ParseQuery(raw_query);
 
     vector<std::string_view> matched_words;
     vector<std::string_view> prew_matched_words(query.plus_words.size());
@@ -132,28 +138,10 @@ int SearchServer::ComputeAverageRating(const vector<int>& ratings) {
     return rating_sum / static_cast<int>(ratings.size());
 }
 
-
-SearchServer::QueryWord SearchServer::ParseQueryWord(const string& text) const {
-    if (text.empty()) {
-        throw invalid_argument("Query word is empty"s);
-    }
-    string word = text;
-    bool is_minus = false;
-    if (word[0] == '-') {
-        is_minus = true;
-        word = word.substr(1);
-    }
-    if (word.empty() || word[0] == '-' || !IsValidWord(word)) {
-        throw invalid_argument("Query word "s + text + " is invalid");
-    }
-    return {word, is_minus, IsStopWord(word)};
-}
-
 SearchServer::QueryWordExec SearchServer::ParseQueryWord(const string_view& text) const {
     if (text.empty()) {
         throw invalid_argument("Query word is empty"s);
     }
-//    cout << "word:" << text << endl;
     string_view word = text;
     bool is_minus = false;
     if (word[0] == '-') {
@@ -167,24 +155,10 @@ SearchServer::QueryWordExec SearchServer::ParseQueryWord(const string_view& text
     return {text, is_minus, IsStopWord(string(word))};
 }
 
-SearchServer::Query SearchServer::ParseQuery(const string& text) const {
-    Query result;
-    for (const string& word : SplitIntoWords(text)) {
-        const auto query_word = ParseQueryWord(word);
-        if (!query_word.is_stop) {
-            if (query_word.is_minus) {
-                result.minus_words.insert(query_word.data);
-            } else {
-                result.plus_words.insert(query_word.data);
-            }
-        }
-    }
-    return result;
-}
 
-SearchServer::Query_par SearchServer::ParseQueryExec(const std::string_view &text) const
+SearchServer::Query SearchServer::ParseQuery(const std::string_view &text) const
 {
-    Query_par query;
+    Query query;
     for ( const std::string_view& word : SplitIntoWords(text) ){
         const auto query_word = ParseQueryWord(word);
         if (!query_word.is_stop) {
@@ -221,6 +195,7 @@ set<int>::iterator SearchServer::end()
 
 const map<string_view, double>& SearchServer::GetWordFrequencies(int document_id) const
 {
+    const static std::map<std::string_view, double> empty_word_freqs_;
     if ( document_to_word_freqs_.count(document_id) > 0 )
     {
         return document_to_word_freqs_.at(document_id);

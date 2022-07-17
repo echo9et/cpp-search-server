@@ -57,23 +57,10 @@ template <typename ExecutionPolicy>
 void Test(string_view mark, const SearchServer& search_server, const vector<string>& queries, ExecutionPolicy&& policy) {
     LOG_DURATION(mark);
     double total_relevance = 0;
-//    double total_rel = 0;
-//    int count = 0;
     for (const string_view query : queries) {
-//        for (const auto& document : search_server.FindTopDocuments( query.data())) {
         for (const auto& document : search_server.FindTopDocuments(policy, query)) {
             total_relevance += document.relevance;
         }
-//        for (const auto& document : search_server.FindTopDocuments( query)) {
-//            total_rel += document.relevance;
-//        }
-//        if (total_rel != total_relevance){
-
-//            cout << "count " << count << " par " << total_relevance << " seq " << total_rel << endl
-//                 << query << endl;
-//            break;
-//        }
-//        ++count;
     }
     cout << total_relevance << endl;
 }

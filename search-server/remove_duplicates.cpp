@@ -2,13 +2,13 @@
 
 void RemoveDuplicates(SearchServer& server)
 {
-    set<int> remove_id;
-    set<set<string>> words_docs;
+    std::set<int> remove_id;
+    std::set<std::set<string>> words_docs;
     for ( const int id : server)
     {
         if ( remove_id.count(id) > 1 ) continue;
 
-        set<string> words_doc;
+        std::set<string> words_doc;
         for ( const auto& [word, r] : server.GetWordFrequencies( id ) )
         {
             words_doc.insert(word.data());
